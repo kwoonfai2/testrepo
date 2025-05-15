@@ -1,0 +1,81 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.Fast.Components.FluentUI
+@using Microsoft.JSInterop;
+
+<div @ref="containerRef"
+     @onclick="HandleDivClick"
+     @onfocusin="HandleDivFocusIn"
+     @onfocusout="HandleDivFocusOut"
+     tabindex="0"
+     style="cursor: pointer; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 200px; height: auto;">
+    @if (showTextBox)
+    {
+        <FluentTextBox @ref="textBoxRef"
+                       @bind-Value="textValue"
+                       Placeholder="Type something..."
+                       style="width: 100%;"
+                       @onblur="HandleTextBoxBlur" />
+    }
+    else
+    {
+        <p>Click here to show the text box</p>
+    }
+</div>
+
+@code {
+    private bool showTextBox = false;
+    private ElementReference containerRef;
+    private ElementReference textBoxRef;
+    private string textValue = string.Empty;
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    private async void HandleDivClick()
+    {
+        showTextBox = !showTextBox;
+        if (showTextBox)
+        {
+            await Task.Delay(1);
+            if (textBoxRef.Context != null)
+            {
+                await textBoxRef.FocusAsync();
+            }
+        }
+        else
+        {
+             await HideTextBox();
+        }
+    }
+
+      private async Task HideTextBox()
+    {
+        // Use JS to check if the focused element is within the container.
+        var focusedElementId = await JSRuntime.InvokeAsync<string>("eval", "document.activeElement.id");
+        var containerId = await JSRuntime.InvokeAsync<string>("eval", $"document.getElementById('{containerRef.Id}').id");
+
+
+        if (focusedElementId != containerId)
+        {
+            showTextBox = false;
+            StateHasChanged();
+        }
+    }
+
+
+    private void HandleDivFocusIn()
+    {
+        showTextBox = true;
+        StateHasChanged();
+    }
+
+    private void HandleDivFocusOut()
+    {
+       //Removed
+    }
+
+    private void HandleTextBoxBlur()
+    {
+        showTextBox = false;
+        StateHasChanged();
+    }
+}
