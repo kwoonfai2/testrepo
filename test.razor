@@ -1,0 +1,60 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.Fast.Components.FluentUI
+
+<div @ref="containerRef"
+     @onclick="ToggleTextBoxVisibility"
+     @onfocusin="HandleFocusIn"
+     @onfocusout="HandleFocusOut"
+     tabindex="0"
+     style="cursor: pointer; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 200px; height: auto;">
+    @if (showTextBox)
+    {
+        <FluentTextBox @ref="textBoxRef"
+                       @bind-Value="textValue"
+                       Placeholder="Type something..."
+                       style="width: 100%;"
+                       @onblur="HandleBlur" />
+    }
+    else
+    {
+        <p>Click here to show the text box</p>
+    }
+</div>
+
+@code {
+    private bool showTextBox = false;
+    private ElementReference containerRef;
+    private ElementReference textBoxRef;
+    private string textValue = string.Empty;
+
+    private async void ToggleTextBoxVisibility()
+    {
+        showTextBox = !showTextBox;
+        if (showTextBox)
+        {
+            await Task.Delay(1); // Allow the textbox to render
+            if (textBoxRef.Context != null)
+            {
+                await textBoxRef.FocusAsync();
+            }
+
+        }
+    }
+
+    private void HandleFocusIn()
+    {
+        showTextBox = true;
+        StateHasChanged(); // Ensure the UI updates
+    }
+
+    private void HandleFocusOut()
+    {
+       // showTextBox = false; // removed, handled by onblur now.
+       // StateHasChanged();
+    }
+
+    private void HandleBlur() {
+        showTextBox = false;
+        StateHasChanged();
+    }
+}
