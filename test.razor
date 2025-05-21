@@ -1,60 +1,35 @@
-@using Microsoft.AspNetCore.Components
-@using Microsoft.Fast.Components.FluentUI
+@* MyDialogContent.razor *@
+@using Microsoft.FluentUI.AspNetCore.Components
 
-<div @ref="containerRef"
-     @onclick="ToggleTextBoxVisibility"
-     @onfocusin="HandleFocusIn"
-     @onfocusout="HandleFocusOut"
-     tabindex="0"
-     style="cursor: pointer; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 200px; height: auto;">
-    @if (showTextBox)
+<FluentDialogBody>
+    @if (_isLoading)
     {
-        <FluentTextBox @ref="textBoxRef"
-                       @bind-Value="textValue"
-                       Placeholder="Type something..."
-                       style="width: 100%;"
-                       @onblur="HandleBlur" />
+        <p>Loading...</p>
+        <FluentProgressRing />
     }
     else
     {
-        <p>Click here to show the text box</p>
+        @* Your main dialog content goes here *@
+        <p>Data loaded: @LoadedData</p>
+        <FluentTextField @bind-Value="SomeValue" Placeholder="Enter something" />
     }
-</div>
+</FluentDialogBody>
 
 @code {
-    private bool showTextBox = false;
-    private ElementReference containerRef;
-    private ElementReference textBoxRef;
-    private string textValue = string.Empty;
+    [Parameter]
+    public string LoadedData { get; set; } = "Initial Data";
 
-    private async void ToggleTextBoxVisibility()
+    private bool _isLoading = true;
+    private string SomeValue { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
-        showTextBox = !showTextBox;
-        if (showTextBox)
-        {
-            await Task.Delay(1); // Allow the textbox to render
-            if (textBoxRef.Context != null)
-            {
-                await textBoxRef.FocusAsync();
-            }
+        // Simulate an asynchronous loading operation
+        await Task.Delay(2000); // Wait 2 seconds
 
-        }
-    }
-
-    private void HandleFocusIn()
-    {
-        showTextBox = true;
-        StateHasChanged(); // Ensure the UI updates
-    }
-
-    private void HandleFocusOut()
-    {
-       // showTextBox = false; // removed, handled by onblur now.
-       // StateHasChanged();
-    }
-
-    private void HandleBlur() {
-        showTextBox = false;
-        StateHasChanged();
+        // Once loading is complete, set _isLoading to false
+        _isLoading = false;
+        LoadedData = "Successfully loaded data!"; // Update data
+        StateHasChanged(); // Notify Blazor to re-render
     }
 }

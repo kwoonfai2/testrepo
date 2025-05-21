@@ -1,0 +1,49 @@
+@* MyDialogContent.razor *@
+@using Microsoft.FluentUI.AspNetCore.Components
+
+<FluentDialogBody>
+    <FluentStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="min-height: 200px;">
+        @if (_isLoading)
+        {
+            <p>Loading components...</p>
+            <FluentProgressRing />
+        }
+        else
+        {
+            <p>All components loaded!</p>
+            <FluentTextField @bind-Value="SomeValue" Placeholder="Enter something" />
+            <FluentButton OnClick="CloseDialog">Close Dialog</FluentButton>
+        }
+    </FluentStack>
+</FluentDialogBody>
+
+@code {
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    private bool _isLoading = true;
+    private string SomeValue { get; set; } = "Default Value";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate a delay for component loading
+        await Task.Delay(3000); // 3 seconds
+
+        _isLoading = false;
+
+        // After components are loaded, you can update the Dialog's Header directly
+        // if you want to control the "x" icon.
+        // FluentDialog has a ShowDismiss parameter directly on the component.
+        // We can access it via the CascadingParameter.
+        if (Dialog != null)
+        {
+            Dialog.ShowDismiss = true; // Show the "x" icon
+            StateHasChanged(); // Request a re-render of the dialog to update the header
+        }
+    }
+
+    private async Task CloseDialog()
+    {
+        await Dialog.DismissAsync("Dialog closed from within content.");
+    }
+}

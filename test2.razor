@@ -1,81 +1,53 @@
-@using Microsoft.AspNetCore.Components
-@using Microsoft.Fast.Components.FluentUI
-@using Microsoft.JSInterop;
+@page "/"
+@using Microsoft.FluentUI.AspNetCore.Components
+@inject IDialogService DialogService
 
-<div @ref="containerRef"
-     @onclick="HandleDivClick"
-     @onfocusin="HandleDivFocusIn"
-     @onfocusout="HandleDivFocusOut"
-     tabindex="0"
-     style="cursor: pointer; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 200px; height: auto;">
-    @if (showTextBox)
-    {
-        <FluentTextBox @ref="textBoxRef"
-                       @bind-Value="textValue"
-                       Placeholder="Type something..."
-                       style="width: 100%;"
-                       @onblur="HandleTextBoxBlur" />
-    }
-    else
-    {
-        <p>Click here to show the text box</p>
-    }
-</div>
+<h1>Dialog Example</h1>
+
+<FluentButton Appearance="Appearance.Accent" OnClick="OpenDialog">Open Dialog</FluentButton>
 
 @code {
-    private bool showTextBox = false;
-    private ElementReference containerRef;
-    private ElementReference textBoxRef;
-    private string textValue = string.Empty;
-    [Inject]
-    private IJSRuntime JSRuntime { get; set; }
+    private bool _showDismissButton = false; // Initial state: "x" is hidden
 
-    private async void HandleDivClick()
+    private async Task OpenDialog()
     {
-        showTextBox = !showTextBox;
-        if (showTextBox)
+        // Reset the dismiss button state before opening the dialog
+        _showDismissButton = false;
+        StateHasChanged(); // Make sure the dialog parameters are updated
+
+        var parameters = new DialogParameters<MyDialogContent>
         {
-            await Task.Delay(1);
-            if (textBoxRef.Context != null)
+            Title = "My Loading Dialog",
+            Content = new RenderFragment(builder =>
             {
-                await textBoxRef.FocusAsync();
-            }
-        }
-        else
+                builder.OpenComponent<MyDialogContent>(0);
+                builder.AddAttribute(1, "OnLoadingComplete", EventCallback.Factory.Create(this, HandleLoadingComplete));
+                builder.CloseComponent();
+            }),
+            ShowDismiss = _showDismissButton, // Initial value
+        };
+
+        var dialog = await DialogService.ShowDialogAsync<MyDialogContent>(parameters);
+        var result = await dialog.Result;
+
+        if (result.Reason == DialogReason.Dismissed)
         {
-             await HideTextBox();
+            Console.WriteLine("Dialog dismissed by user.");
         }
-    }
-
-      private async Task HideTextBox()
-    {
-        // Use JS to check if the focused element is within the container.
-        var focusedElementId = await JSRuntime.InvokeAsync<string>("eval", "document.activeElement.id");
-        var containerId = await JSRuntime.InvokeAsync<string>("eval", $"document.getElementById('{containerRef.Id}').id");
-
-
-        if (focusedElementId != containerId)
+        else if (result.Reason == DialogReason.Closed)
         {
-            showTextBox = false;
-            StateHasChanged();
+            Console.WriteLine($"Dialog closed with result: {result.Data}");
         }
     }
 
-
-    private void HandleDivFocusIn()
+    private void HandleLoadingComplete()
     {
-        showTextBox = true;
-        StateHasChanged();
-    }
-
-    private void HandleDivFocusOut()
-    {
-       //Removed
-    }
-
-    private void HandleTextBoxBlur()
-    {
-        showTextBox = false;
-        StateHasChanged();
+        _showDismissButton = true;
+        StateHasChanged(); // This will re-render the dialog provider and potentially update the dialog.
+                           // However, directly updating ShowDismiss after DialogService.ShowDialogAsync
+                           // might not immediately update the *already rendered* dialog header.
+                           // A more robust approach might be to re-open the dialog or update it dynamically
+                           // if that's supported directly by FluentDialog, which is not the case for ShowDismiss.
+                           // The best way to achieve this is to control the "x" icon from within the dialog content.
     }
 }
